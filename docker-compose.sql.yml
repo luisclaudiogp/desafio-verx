@@ -1,0 +1,12 @@
+# Somente DEV/teste: ativa as variantes em SQL otimizado (padrao: EF).
+# Uso: docker compose -f docker-compose.yml -f docker-compose.sql.yml up -d --build
+name: verx
+
+services:
+  lancamentos-api:
+    environment:
+      Posicao__Modo: Sql
+
+  consolidado-api:
+    environment:
+      Projecao__Modo: Sql

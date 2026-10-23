@@ -1,0 +1,23 @@
+# Segredos locais
+.env
+
+# SonarQube / cobertura
+.sonarqube/
+.sonar/
+coverage.opencover.xml
+coverage.cobertura.xml
+TestResults/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.pdb
+
+# IDEs / SO
+.vs/
+.idea/
+.DS_Store
+Thumbs.db
+*.sln.iml

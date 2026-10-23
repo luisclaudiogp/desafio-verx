@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Consolidado\Consolidado.Infrastructure\Consolidado.Infrastructure.csproj" />
+    <ProjectReference Include="..\Lancamentos\Lancamentos.Infrastructure\Lancamentos.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

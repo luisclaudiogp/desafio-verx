@@ -1,0 +1,15 @@
+@host = http://localhost:5101
+@conta = 11111111-1111-1111-1111-111111111111
+@token = <cole o access_token obtido no Keycloak>
+
+### Saldo agora
+GET {{host}}/api/contas/{{conta}}/saldo
+Authorization: Bearer {{token}}
+
+### Saldo em um instante
+GET {{host}}/api/contas/{{conta}}/saldo?em=2026-09-01T12:00:00Z
+Authorization: Bearer {{token}}
+
+### Consolidado do dia (UTC)
+GET {{host}}/api/contas/{{conta}}/saldo-diario/2026-10-19
+Authorization: Bearer {{token}}

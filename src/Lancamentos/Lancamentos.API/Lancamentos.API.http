@@ -1,0 +1,22 @@
+@host = http://localhost:5100
+@conta = 11111111-1111-1111-1111-111111111111
+
+### 1) Token (Keycloak) — copie o access_token para a variavel abaixo
+POST http://localhost:8081/realms/Verx/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=verx-api&grant_type=password&username=cliente.a&password=dev-only-a
+
+### 2) Registrar credito
+@token = <cole o access_token>
+POST {{host}}/api/contas/{{conta}}/lancamentos
+Authorization: Bearer {{token}}
+Idempotency-Key: demo-0001
+Content-Type: application/json
+
+{ "tipo": "Credito", "valor": 1250.50 }
+
+### 3) Estornar (substitua o id)
+POST {{host}}/api/contas/{{conta}}/lancamentos/<id-do-lancamento>/estornos
+Authorization: Bearer {{token}}
+Idempotency-Key: demo-estorno-0001

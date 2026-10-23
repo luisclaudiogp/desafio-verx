@@ -1,0 +1,173 @@
+# Ambiente local completo. Todos os valores abaixo sao SOMENTE para desenvolvimento;
+# em producao segredos vem de um cofre (Vault/Key Vault/Secrets Manager), nunca do repositorio.
+# Para sobrescrever: copie .env.example para .env.
+name: verx
+
+x-app-env: &app-env
+  ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+  RabbitMQ__Host: rabbitmq
+  RabbitMQ__Username: ${RABBITMQ_USER:-verx}
+  RabbitMQ__Password: ${RABBITMQ_PASSWORD:-verx_dev_only}
+  Keycloak__Authority: http://keycloak:8080/realms/Verx
+  Keycloak__Issuer: http://localhost:8081/realms/Verx
+  Keycloak__Audience: verx-api
+  Keycloak__RequireHttpsMetadata: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verx_dev_only}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [verx_net]
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-verx}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-verx_dev_only}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks: [verx_net]
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [verx_net]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.2
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      # O emissor (iss) dos tokens e sempre o endereco publico; o backchannel continua dinamico (rede docker).
+      KC_HOSTNAME_URL: http://localhost:8081
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    networks: [verx_net]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+    networks: [verx_net]
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks: [verx_net]
+
+  lancamentos-api:
+    build:
+      context: .
+      dockerfile: src/Lancamentos/Lancamentos.API/Dockerfile
+    expose:
+      - "8080"
+    environment:
+      <<: *app-env
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=lancamentos_db;Username=postgres;Password=${POSTGRES_PASSWORD:-verx_dev_only};Gss Encryption Mode=Disable;Maximum Pool Size=50;Minimum Pool Size=5
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      keycloak: { condition: service_started }
+    restart: unless-stopped
+    networks: [verx_net]
+
+  consolidado-api:
+    build:
+      context: .
+      dockerfile: src/Consolidado/Consolidado.API/Dockerfile
+    expose:
+      - "8080"
+    environment:
+      <<: *app-env
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=consolidado_db;Username=postgres;Password=${POSTGRES_PASSWORD:-verx_dev_only};Gss Encryption Mode=Disable;Maximum Pool Size=50;Minimum Pool Size=5
+      Redis__ConnectionString: redis:6379,abortConnect=false,connectTimeout=500,syncTimeout=500
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      keycloak: { condition: service_started }
+    restart: unless-stopped
+    networks: [verx_net]
+
+  # Unico ponto de entrada publicado: login (Keycloak) + roteamento para as APIs internas.
+  bff:
+    build:
+      context: .
+      dockerfile: src/Bff/Bff.API/Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      Keycloak__Authority: http://keycloak:8080/realms/Verx
+      Keycloak__Issuer: http://localhost:8081/realms/Verx
+      Keycloak__Audience: verx-api
+      Keycloak__RequireHttpsMetadata: "false"
+      Keycloak__TokenEndpoint: http://keycloak:8080/realms/Verx/protocol/openid-connect/token
+      Keycloak__LogoutEndpoint: http://keycloak:8080/realms/Verx/protocol/openid-connect/logout
+      Keycloak__ClientId: verx-bff
+      Keycloak__ClientSecret: ${BFF_CLIENT_SECRET:-dev-only-bff-secret}
+      RateLimiting__Redis__ConnectionString: redis:6379,abortConnect=false,connectTimeout=500,syncTimeout=500
+      Sessao__UrlPublicaDoIdp: http://localhost:8081
+      Sessao__UrlInternaDoIdp: http://keycloak:8080
+      Sessao__RedisConnectionString: redis:6379,abortConnect=false,connectTimeout=500,syncTimeout=500
+      ReverseProxy__Clusters__lancamentos__Destinations__principal__Address: http://lancamentos-api:8080/
+      ReverseProxy__Clusters__consolidado__Destinations__principal__Address: http://consolidado-api:8080/
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    depends_on:
+      lancamentos-api: { condition: service_started }
+      consolidado-api: { condition: service_started }
+      redis: { condition: service_healthy }
+      keycloak: { condition: service_started }
+    restart: unless-stopped
+    networks: [verx_net]
+
+  # Opcional: analise estatica. Suba com `docker compose --profile quality up -d sonarqube`.
+  sonarqube:
+    image: sonarqube:lts-community
+    profiles: [quality]
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    networks: [verx_net]
+
+networks:
+  verx_net:
+    driver: bridge
+
+volumes:
+  postgres_data:

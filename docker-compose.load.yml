@@ -1,0 +1,36 @@
+name: verx
+
+services:
+  bff:
+    environment:
+      RateLimiting__PermitLimitPorUsuario: "1000000"
+      RateLimiting__ReposicaoPorSegundo: "1000000"
+      RateLimiting__PermitLimitGlobal: "1000000"
+      Logging__LogLevel__Default: Warning
+
+  postgres:
+    command: >
+      postgres
+      -c max_connections=300
+      -c shared_buffers=512MB
+      -c effective_cache_size=1GB
+      -c wal_compression=on
+      -c checkpoint_timeout=15min
+      -c max_wal_size=4GB
+
+  lancamentos-api:
+    environment:
+      RateLimiting__PermitLimitPorUsuario: "1000000"
+      RateLimiting__ReposicaoPorSegundo: "1000000"
+      RateLimiting__PermitLimitGlobal: "1000000"
+      Logging__LogLevel__Default: Warning
+      Outbox__BatchSize: "1000"
+      Outbox__Paralelismo: "4"
+      Outbox__PollOciosoMs: "20"
+
+  consolidado-api:
+    environment:
+      RateLimiting__PermitLimitPorUsuario: "1000000"
+      RateLimiting__ReposicaoPorSegundo: "1000000"
+      RateLimiting__PermitLimitGlobal: "1000000"
+      Logging__LogLevel__Default: Warning

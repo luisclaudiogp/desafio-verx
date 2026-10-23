@@ -1,0 +1,44 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path=".editorconfig" />
+    <File Path="docker-compose.yml" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Verx.SharedKernel/Verx.SharedKernel.csproj" />
+    <Project Path="src/BuildingBlocks/Verx.Persistence/Verx.Persistence.csproj" />
+    <Project Path="src/BuildingBlocks/Verx.Web/Verx.Web.csproj" />
+    <Project Path="src/BuildingBlocks/Verx.Web.Redis/Verx.Web.Redis.csproj" />
+  </Folder>
+  <Folder Name="/src/Lancamentos/">
+    <Project Path="src/Lancamentos/Lancamentos.API/Lancamentos.API.csproj" />
+    <Project Path="src/Lancamentos/Lancamentos.Application/Lancamentos.Application.csproj" />
+    <Project Path="src/Lancamentos/Lancamentos.Domain/Lancamentos.Domain.csproj" />
+    <Project Path="src/Lancamentos/Lancamentos.Infrastructure/Lancamentos.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Consolidado/">
+    <Project Path="src/Consolidado/Consolidado.API/Consolidado.API.csproj" />
+    <Project Path="src/Consolidado/Consolidado.Application/Consolidado.Application.csproj" />
+    <Project Path="src/Consolidado/Consolidado.Domain/Consolidado.Domain.csproj" />
+    <Project Path="src/Consolidado/Consolidado.Infrastructure/Consolidado.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Bff/">
+    <Project Path="src/Bff/Bff.API/Bff.API.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared.Contracts/Shared.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="src/Verx.Benchmarks/Verx.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="src/Lancamentos/Lancamentos.UnitTests/Lancamentos.UnitTests.csproj" />
+    <Project Path="src/Consolidado/Consolidado.UnitTests/Consolidado.UnitTests.csproj" />
+    <Project Path="src/Bff/Bff.UnitTests/Bff.UnitTests.csproj" />
+    <Project Path="src/BuildingBlocks/Verx.BuildingBlocks.UnitTests/Verx.BuildingBlocks.UnitTests.csproj" />
+    <Project Path="src/Verx.IntegrationTests/Verx.IntegrationTests.csproj" />
+    <Project Path="src/Verx.ArchitectureTests/Verx.ArchitectureTests.csproj" />
+  </Folder>
+</Solution>

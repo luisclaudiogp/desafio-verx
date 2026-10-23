@@ -1,0 +1,58 @@
+@host = http://localhost:5000
+@conta = 11111111-1111-1111-1111-111111111111
+@token = <cole o access_token retornado por /auth/login>
+@refresh = <cole o refresh_token retornado por /auth/login>
+
+### Login por API (password grant via BFF; para navegadores use GET /bff/login no browser: Authorization Code + PKCE)
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "usuario": "cliente.a", "senha": "dev-only-a" }
+
+### Renovar o token
+POST {{host}}/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "{{refresh}}" }
+
+### Quem sou eu / quais contas posso acessar
+GET {{host}}/auth/me
+Authorization: Bearer {{token}}
+
+### Registrar lancamento (roteado para Lancamentos.API)
+POST {{host}}/api/contas/{{conta}}/lancamentos
+Authorization: Bearer {{token}}
+Idempotency-Key: demo-001
+Content-Type: application/json
+
+{ "tipo": "Credito", "valor": 100.00 }
+
+### Debito acima do saldo => 422 (saldo insuficiente)
+POST {{host}}/api/contas/{{conta}}/lancamentos
+Authorization: Bearer {{token}}
+Idempotency-Key: demo-sem-saldo
+Content-Type: application/json
+
+{ "tipo": "Debito", "valor": 999999999 }
+
+### Mesma Idempotency-Key com outro corpo => 422
+POST {{host}}/api/contas/{{conta}}/lancamentos
+Authorization: Bearer {{token}}
+Idempotency-Key: demo-001
+Content-Type: application/json
+
+{ "tipo": "Credito", "valor": 555.00 }
+
+### Saldo agora (roteado para Consolidado.API)
+GET {{host}}/api/contas/{{conta}}/saldo
+Authorization: Bearer {{token}}
+
+### Consolidado do dia (UTC)
+GET {{host}}/api/contas/{{conta}}/saldo-diario/2026-10-19
+Authorization: Bearer {{token}}
+
+### Logout (revoga a sessao no Keycloak)
+POST {{host}}/auth/logout
+Content-Type: application/json
+
+{ "refreshToken": "{{refresh}}" }

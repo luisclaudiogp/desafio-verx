@@ -1,0 +1,8 @@
+name: verx
+
+services:
+  lancamentos-api:
+    ports: !reset []
+
+  consolidado-api:
+    ports: !reset []

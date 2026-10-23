@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="..\Lancamentos.Application\Lancamentos.Application.csproj" />
+    <ProjectReference Include="..\Lancamentos.Infrastructure\Lancamentos.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Verx.Web\Verx.Web.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

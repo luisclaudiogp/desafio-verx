@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Verx.Web\Verx.Web.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Polly.Core" />
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+</Project>
