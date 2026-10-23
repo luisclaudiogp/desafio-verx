@@ -15,15 +15,9 @@ namespace Consolidado.API.Controllers;
 [EnableRateLimiting(RateLimitingExtensions.PolicyPadrao)]
 [Route("api/contas/{contaId:guid}")]
 public class SaldosController(
-    IQueryHandler<ObterSaldoDiarioQuery, SaldoDiarioDto> saldoDiario,
     IQueryHandler<ObterSaldoEmQuery, SaldoEmDto> saldoEm,
     TimeProvider timeProvider) : ControllerBase
 {
-    [HttpGet("saldo-diario/{data}")]
-    [ProducesResponseType<SaldoDiarioDto>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> ObterSaldoDiario(Guid contaId, DateOnly data, CancellationToken cancellationToken) =>
-        Ok(await saldoDiario.HandleAsync(new ObterSaldoDiarioQuery(contaId, data), cancellationToken));
-
     [HttpGet("saldo")]
     [ProducesResponseType<SaldoEmDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> ObterSaldo(Guid contaId, [FromQuery] DateTimeOffset? em, CancellationToken cancellationToken)

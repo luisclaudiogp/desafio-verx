@@ -24,5 +24,6 @@ Um ADR aceito não é editado: se a decisão mudar, cria-se um novo que o **subs
 | [0017](0017-sessao-do-bff-authorization-code-pkce.md) | Sessão do BFF com Authorization Code + PKCE | Aceito |
 | [0018](0018-rate-limit-distribuido.md) | Rate limit distribuído (Redis) | Aceito |
 | [0019](0019-ef-por-padrao-sql-como-otimizacao-medida.md) | EF por padrão; SQL específico como otimização opcional e medida | Aceito |
+| [0020](0020-qualidade-estatica-sonarqube.md) | Qualidade estática contínua (SonarQube, quality gate e revisão de hotspots) | Aceito |
 
 Novo ADR: copie [`template.md`](template.md).

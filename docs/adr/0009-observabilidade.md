@@ -20,7 +20,7 @@ Um fluxo assíncrono (API → Outbox → RabbitMQ → consumidor → banco) é d
 | Latência p95 de `POST /lancamentos` | < 300 ms |
 | Latência p95 de `GET /saldo*` | < 150 ms (cache) / < 400 ms (miss) |
 | Atraso de projeção (Outbox → saldo) p99 | < 5 s |
-| Mensagens na DLQ | 0 (qualquer valor > 0 gera alerta) |
+| Mensagens na DLQ | 0 (qualquer valor > 0 dispara o alerta `MensagensNaDLQ`, já configurado em `prometheus-alerts.yml`) |
 
 ## Alternativas consideradas
 - **Logs apenas** — sem correlação entre serviços.

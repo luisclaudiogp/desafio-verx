@@ -85,6 +85,7 @@ services:
     image: prom/prometheus:v2.55.1
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro
     ports:
       - "9090:9090"
     networks: [verx_net]
@@ -157,7 +158,7 @@ services:
 
   # Opcional: analise estatica. Suba com `docker compose --profile quality up -d sonarqube`.
   sonarqube:
-    image: sonarqube:lts-community
+    image: sonarqube:community
     profiles: [quality]
     ports:
       - "9000:9000"

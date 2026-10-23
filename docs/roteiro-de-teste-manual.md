@@ -140,6 +140,7 @@ irm "$b/api/contas/$conta/lancamentos/$($c1.id)" -Headers $h
 $outra = "22222222-2222-2222-2222-222222222222"
 try { irm "$b/api/contas/$outra/saldo" -Headers $h } catch { $_.Exception.Response.StatusCode.value__ }                                   # 403 (conta de outro cliente)
 try { irm -Method Post "$b/api/contas/$conta/lancamentos" -Headers $h -ContentType "application/json" -Body '{"tipo":"Credito","valor":5}' } catch { $_.Exception.Response.StatusCode.value__ }   # 400 (sem Idempotency-Key)
+try { irm -Method Post "$b/api/contas/$conta/lancamentos" -Headers (@{ Authorization = $h.Authorization; "Idempotency-Key" = "sem-valor-$suf" }) -ContentType "application/json" -Body '{"tipo":"Credito"}' } catch { $_.Exception.Response.StatusCode.value__ }   # 400 (campo obrigatório "valor" ausente)
 try { Lancar "Credito" -5 "neg-$suf" } catch { $_.Exception.Response.StatusCode.value__ }                                               # 422 (valor inválido)
 ```
 Troque de usuário: faça login como `cliente.b` / `dev-only-b` e confirme que ele acessa só a conta `2222…` e recebe 403 na `1111…`.
@@ -200,8 +201,10 @@ Os snapshots cobrem **dias encerrados**; com dados só de hoje não há o que ge
 (`{"tipo":"Credito","valor":10,"ocorridoEm":"2026-10-10T12:00:00Z"}`), aguarde o próximo ciclo (`Snapshots:IntervaloSegundos`, padrão 600 s; para
 testar, suba o Consolidado com `Snapshots__IntervaloSegundos=10`) e confira:
 ```powershell
-docker compose exec -T postgres psql -U postgres -d consolidado_db -c 'select "ContaId","Data","TotalCreditos","TotalDebitos" from saldo_snapshots order by "Data"'
+'select "ContaId","Data","TotalCreditos","TotalDebitos" from saldo_snapshots order by "Data"' | docker compose exec -T postgres psql -U postgres -d consolidado_db
 ```
+(O SQL vai por *pipe* porque o Windows PowerShell 5.1 remove as aspas duplas ao passar argumentos para executáveis nativos.)
+
 Em seguida consulte `GET /saldo?em=<instante>`: o valor é igual ao de antes dos snapshots (a consulta só muda de caminho, não de resultado).
 
 ## 10. Rate limit (opcional)

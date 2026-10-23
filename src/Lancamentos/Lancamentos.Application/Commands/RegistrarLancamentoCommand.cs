@@ -8,4 +8,4 @@ public sealed record RegistrarLancamentoCommand(
     decimal Valor,
     DateTimeOffset? OcorridoEm,
     string ChaveIdempotencia,
-    string Usuario) : ICommand<ResultadoRegistro>;
+    string Usuario);

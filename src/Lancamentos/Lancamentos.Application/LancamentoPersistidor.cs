@@ -18,22 +18,24 @@ public sealed class LancamentoPersistidor(
 
     public async Task<ResultadoRegistro?> PersistirAsync(Lancamento lancamento, CancellationToken cancellationToken)
     {
-        for (var tentativa = 1; ; tentativa++)
+        for (var tentativa = 1; tentativa < MaximoDeTentativas; tentativa++)
         {
             try
             {
                 var resultado = await TentarAsync(lancamento, cancellationToken);
-                if (resultado is not null || tentativa == MaximoDeTentativas)
+                if (resultado is not null)
                     return resultado;
             }
-            catch (ConcorrenciaException) when (tentativa < MaximoDeTentativas)
+            catch (ConcorrenciaException)
             {
-                await EsperarAsync(tentativa, cancellationToken);
-                continue;
+                // conflito de concorrencia otimista: espera um pouco (com jitter) e repete
             }
 
             await EsperarAsync(tentativa, cancellationToken);
         }
+
+        // ultima tentativa: resultado nulo ou conflito persistente sobem para quem chamou
+        return await TentarAsync(lancamento, cancellationToken);
     }
 
     private async Task<ResultadoRegistro?> TentarAsync(Lancamento lancamento, CancellationToken cancellationToken)

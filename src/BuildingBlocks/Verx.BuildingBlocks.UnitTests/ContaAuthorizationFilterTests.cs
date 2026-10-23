@@ -24,8 +24,8 @@ public class ContaAuthorizationFilterTests
 
         return new ResourceExecutingContext(
             new ActionContext(http, rota, new ActionDescriptor()),
-            new List<IFilterMetadata>(),
-            new List<IValueProviderFactory>());
+            [],
+            []);
     }
 
     private static (ResourceExecutionDelegate Next, Func<bool> Executou) Proximo()

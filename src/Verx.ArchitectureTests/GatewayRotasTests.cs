@@ -55,8 +55,8 @@ public partial class GatewayRotasTests
             .Select(Exemplo);
 
     private static bool Casa(string padrao, string caminho) =>
-        new TemplateMatcher(TemplateParser.Parse(padrao), new RouteValueDictionary())
-            .TryMatch(new PathString(caminho), new RouteValueDictionary());
+        new TemplateMatcher(TemplateParser.Parse(padrao), [])
+            .TryMatch(new PathString(caminho), []);
 
     [Fact]
     public void TodoEndpointDasApisInternasTemRotaNoGateway()

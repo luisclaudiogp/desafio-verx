@@ -7,6 +7,9 @@ public partial class CleanCodeTests
     [GeneratedRegex(@"^(?:(?:public|internal|private|protected|sealed|static|abstract|partial|readonly|file)\s+)*(?:class|interface|record(?:\s+struct)?|struct|enum)\s+\w+", RegexOptions.Multiline)]
     private static partial Regex DeclaracaoDeTipo();
 
+    [GeneratedRegex(@"(?:class|interface|record(?:\s+struct)?|struct|enum)\s+(\w+)")]
+    private static partial Regex NomeDoTipo();
+
     private static string RaizDaSolucao()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -43,7 +46,7 @@ public partial class CleanCodeTests
             var match = DeclaracaoDeTipo().Match(texto);
             if (!match.Success) continue;
 
-            var nome = Regex.Match(match.Value, @"(?:class|interface|record(?:\s+struct)?|struct|enum)\s+(\w+)").Groups[1].Value;
+            var nome = NomeDoTipo().Match(match.Value).Groups[1].Value;
             var esperado = Path.GetFileNameWithoutExtension(arquivo);
             if (!string.Equals(nome, esperado, StringComparison.Ordinal)
                 && !arquivo.EndsWith("Program.cs", StringComparison.Ordinal))

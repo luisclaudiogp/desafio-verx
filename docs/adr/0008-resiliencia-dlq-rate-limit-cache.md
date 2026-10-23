@@ -32,5 +32,6 @@ limitador global configurável (`RateLimiting:PermitLimitGlobal`, padrão 500/s)
 
 ## Consequências
 - (+) Cada falha tem comportamento definido e testado (`FailOpenCacheTests`, `CachedSaldoDiarioReadRepositoryTests`, testes de integração, simulação no README).
-- (−) A DLQ exige **operação**: alerta em `messages > 0` na fila `_error` e procedimento de reprocessamento (runbook).
+- (−) A DLQ exige **operação**: o alerta `MensagensNaDLQ` ([`prometheus-alerts.yml`](../../prometheus-alerts.yml); métrica `rabbitmq_detailed_queue_messages`
+  do plugin `rabbitmq_prometheus`, raspada pelo Prometheus) dispara com `messages > 0` em qualquer fila `*_error`, e há o procedimento de reprocessamento (runbook no README).
 - (−) O limite do rate limit é por instância **por padrão**; com `RateLimiting:RedisConnectionString` ele passa a ser exato entre réplicas ([ADR-0018](0018-rate-limit-distribuido.md)).

@@ -13,6 +13,33 @@ public class SaldoDiarioTests
         Movimento.Criar(Guid.NewGuid(), conta ?? Conta, tipo, valor, quando ?? Ocorrido, DateTimeOffset.UtcNow);
 
     [Fact]
+    public void AcumularPorDia_AgrupaPorContaEDia()
+    {
+        var outraConta = Guid.NewGuid();
+        var deltas = SaldoDiario.AcumularPorDia(
+        [
+            Mov(TipoMovimento.Credito, 100m),
+            Mov(TipoMovimento.Debito, 30m),
+            Mov(TipoMovimento.Credito, 5m, Ocorrido.AddDays(1)),
+            Mov(TipoMovimento.Credito, 7m, conta: outraConta)
+        ]);
+
+        Assert.Equal(3, deltas.Count);
+        var dia1 = Assert.Single(deltas, d => d.ContaId == Conta && d.Data == Dia);
+        Assert.Equal(100m, dia1.TotalCreditos);
+        Assert.Equal(30m, dia1.TotalDebitos);
+        Assert.Equal(7m, Assert.Single(deltas, d => d.ContaId == outraConta).TotalCreditos);
+    }
+
+    [Fact]
+    public void AcumularPorDia_SemMovimentos_RetornaVazio() =>
+        Assert.Empty(SaldoDiario.AcumularPorDia([]));
+
+    [Fact]
+    public void AcumularPorDia_Nulo_Lanca() =>
+        Assert.Throws<ArgumentNullException>(() => SaldoDiario.AcumularPorDia(null!));
+
+    [Fact]
     public void Abrir_ComecaZerado()
     {
         var saldo = SaldoDiario.Abrir(Conta, Dia);

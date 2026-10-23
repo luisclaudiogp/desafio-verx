@@ -59,7 +59,8 @@ public class LancamentoCriadoLoteConsumerTests
         _handler.Setup(h => h.HandleAsync(It.IsAny<RegistrarMovimentosEmLoteCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ResultadoProjecao(1, 2, 1));
 
-        await Criar().Consume(Contexto(Evento()));
+        Assert.Null(await Record.ExceptionAsync(() => Criar().Consume(Contexto(Evento()))));
+        _handler.Verify(h => h.HandleAsync(It.IsAny<RegistrarMovimentosEmLoteCommand>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

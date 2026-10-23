@@ -46,11 +46,12 @@ public class FailOpenCacheTests
 
     [Fact]
     public async Task Set_RedisFora_NaoLanca() =>
-        await Criar(new CacheQuebrado()).SetStringAsync("k", "v", TimeSpan.FromMinutes(1), default);
+        Assert.Null(await Record.ExceptionAsync(() =>
+            Criar(new CacheQuebrado()).SetStringAsync("k", "v", TimeSpan.FromMinutes(1), default)));
 
     [Fact]
     public async Task Remove_RedisFora_NaoLanca() =>
-        await Criar(new CacheQuebrado()).RemoveAsync("k", default);
+        Assert.Null(await Record.ExceptionAsync(() => Criar(new CacheQuebrado()).RemoveAsync("k", default)));
 
     [Fact]
     public async Task CircuitBreakerAberto_ParaDeTocarNoCache()

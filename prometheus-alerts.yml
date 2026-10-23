@@ -1,0 +1,12 @@
+groups:
+  - name: mensageria
+    rules:
+      - alert: MensagensNaDLQ
+        # Fila de erro do MassTransit (<fila>_error): qualquer mensagem ali exige analise e reprocessamento (runbook no README).
+        expr: rabbitmq_detailed_queue_messages{queue=~".+_error"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Mensagens na DLQ {{ $labels.queue }}"
+          description: "{{ $value }} mensagem(ns) na fila {{ $labels.queue }}. Siga o runbook 'Simulando falhas > 4' do README."

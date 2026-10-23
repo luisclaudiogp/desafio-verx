@@ -14,8 +14,11 @@ comando, consulta, cache e regras. Aqui o padrão é **implementado**.
 - **Queries** (`ObterLancamentoQuery`, `ObterSaldoDiarioQuery`, `ObterSaldoEmQuery`) passam por `IQueryHandler<,>`, sem efeitos
   colaterais, lendo por portas próprias e segregadas (`ISaldoDiarioReadRepository`, `ISaldoEmReadRepository`) com projeções `AsNoTracking`.
 - Separação física: o **Consolidado é o read model** (banco próprio, desnormalizado) alimentado por eventos do write model.
-- Contratos mínimos (`ICommand`, `IQuery`, handlers) vivem em `Verx.SharedKernel`; os controllers recebem o handler específico
-  por injeção (dependência explícita, sem *service locator*).
+- Os contratos mínimos (`ICommandHandler<TCommand,TResult>` e `IQueryHandler<TQuery,TResult>`) vivem em `Verx.SharedKernel`; comandos e
+  consultas são *records* simples, sem interface marcadora (o par comando→resultado já é fixado pelo handler e a análise estática
+  apontou o parâmetro genérico dos marcadores como sem uso — [ADR-0020](0020-qualidade-estatica-sonarqube.md)). Os controllers recebem
+  o handler específico por injeção (dependência explícita, sem *service locator*).
+- A **totalização** dos movimentos por conta/dia é regra de domínio (`SaldoDiario.AcumularPorDia`); o handler apenas orquestra.
 
 ## Alternativas consideradas
 - **MediatR** — padrão comum, mas desde 2025 tem licença comercial; para três interfaces triviais não compensa a dependência.

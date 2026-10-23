@@ -2,10 +2,10 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { Counter } from 'k6/metrics';
 
-const RATE = parseInt(__ENV.RATE || '200');
+const RATE = Number.parseInt(__ENV.RATE || '200');
 const DURACAO = __ENV.DURACAO || '30s';
-const CONTAS = parseInt(__ENV.CONTAS || '200');
-const HOT = parseFloat(__ENV.HOT || '0');
+const CONTAS = Number.parseInt(__ENV.CONTAS || '200');
+const HOT = Number.parseFloat(__ENV.HOT || '0');
 const LANC = __ENV.LANC || 'http://lancamentos-api:8080';
 const KC = __ENV.KC || 'http://keycloak:8080';
 
@@ -55,7 +55,7 @@ function conta() {
   return idConta(Math.random() < HOT ? 1 : 1 + Math.floor(Math.random() * CONTAS));
 }
 
-export default function (dados) {
+export default function executar(dados) {
   const id = conta();
   const tipo = Math.random() < 0.6 ? 'Credito' : 'Debito';
   const valor = (1 + Math.floor(Math.random() * 100000)) / 100;

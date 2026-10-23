@@ -7,17 +7,18 @@ using Verx.Benchmarks;
 var conexao = Argumento(args, "--conexao")
               ?? "Host=localhost;Port=5432;Username=postgres;Password=verx_dev_only;Gss Encryption Mode=Disable";
 var repeticoes = int.Parse(Argumento(args, "--repeticoes") ?? "30", CultureInfo.InvariantCulture);
-var secao = Argumento(args, "--secao") ?? "todas";
+const string Todas = "todas";
+var secao = Argumento(args, "--secao") ?? Todas;
 
 Console.WriteLine($"Ambiente: {Environment.ProcessorCount} CPUs, .NET {Environment.Version}, PostgreSQL em {conexao.Split(';')[0]}.");
 
-if (secao is "todas" or "projecao")
+if (secao is Todas or "projecao")
     await ProjecaoAsync(conexao, repeticoes, args.Contains("--inverter"));
 
-if (secao is "todas" or "concorrencia")
+if (secao is Todas or "concorrencia")
     await ConcorrenciaAsync(conexao);
 
-if (secao is "todas" or "posicao")
+if (secao is Todas or "posicao")
     await PosicaoAsync(conexao);
 
 static async Task ProjecaoAsync(string conexao, int repeticoes, bool inverter)

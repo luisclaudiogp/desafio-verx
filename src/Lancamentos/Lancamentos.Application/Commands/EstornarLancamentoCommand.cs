@@ -6,4 +6,4 @@ public sealed record EstornarLancamentoCommand(
     Guid ContaId,
     Guid LancamentoId,
     string ChaveIdempotencia,
-    string Usuario) : ICommand<ResultadoRegistro>;
+    string Usuario);

@@ -53,17 +53,20 @@ public sealed class RegistrarMovimentosEmLoteHandler(
 
     private async Task<IReadOnlyList<Movimento>> AplicarAsync(List<Movimento> validos, CancellationToken cancellationToken)
     {
-        for (var tentativa = 1; ; tentativa++)
+        for (var tentativa = 1; tentativa < MaximoDeTentativasPorConflito; tentativa++)
         {
             try
             {
                 return await TentarAplicarAsync(validos, cancellationToken);
             }
-            catch (ConcorrenciaException) when (tentativa < MaximoDeTentativasPorConflito)
+            catch (ConcorrenciaException)
             {
-                continue;
+                // conflito de concorrencia: a transacao foi desfeita, repete com os saldos atualizados
             }
         }
+
+        // ultima tentativa: o conflito, se persistir, sobe para o retry da mensageria
+        return await TentarAplicarAsync(validos, cancellationToken);
     }
 
     private async Task<IReadOnlyList<Movimento>> TentarAplicarAsync(List<Movimento> validos, CancellationToken cancellationToken)
@@ -71,27 +74,12 @@ public sealed class RegistrarMovimentosEmLoteHandler(
         await using var transacao = await projecao.IniciarAsync(cancellationToken);
 
         var aplicados = await transacao.InserirMovimentosAsync(validos, cancellationToken);
-        var deltas = CalcularDeltas(aplicados);
+        var deltas = SaldoDiario.AcumularPorDia(aplicados);
         await transacao.AcumularSaldosAsync(deltas, cancellationToken);
         await snapshots.CorrigirAsync(deltas, cancellationToken);
         await transacao.CommitAsync(cancellationToken);
 
         return aplicados;
-    }
-
-    private static List<SaldoDiario> CalcularDeltas(IReadOnlyList<Movimento> aplicados)
-    {
-        var deltas = new List<SaldoDiario>();
-
-        foreach (var grupo in aplicados.GroupBy(m => (m.ContaId, m.Dia)))
-        {
-            var delta = SaldoDiario.Abrir(grupo.Key.ContaId, grupo.Key.Dia);
-            foreach (var movimento in grupo)
-                delta.Aplicar(movimento);
-            deltas.Add(delta);
-        }
-
-        return deltas;
     }
 
     private Task InvalidarCacheAsync(IReadOnlyList<Movimento> aplicados, CancellationToken cancellationToken) =>

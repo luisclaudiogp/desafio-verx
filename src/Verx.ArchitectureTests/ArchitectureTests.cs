@@ -18,23 +18,23 @@ public class ArchitectureTests
         "Shared.Contracts"
     ];
 
-    public static TheoryData<string, Assembly> Dominios => new()
+    public static TheoryData<string, Type> Dominios => new()
     {
-        { "Lancamentos.Domain", LancDomain },
-        { "Consolidado.Domain", ConsDomain }
+        { "Lancamentos.Domain", typeof(Lancamentos.Domain.Entities.Lancamento) },
+        { "Consolidado.Domain", typeof(Consolidado.Domain.Entities.SaldoDiario) }
     };
 
-    public static TheoryData<string, Assembly, string> Aplicacoes => new()
+    public static TheoryData<string, Type, string> Aplicacoes => new()
     {
-        { "Lancamentos.Application", LancApplication, "Lancamentos.Infrastructure" },
-        { "Consolidado.Application", ConsApplication, "Consolidado.Infrastructure" }
+        { "Lancamentos.Application", typeof(Lancamentos.Application.LancamentoDto), "Lancamentos.Infrastructure" },
+        { "Consolidado.Application", typeof(Consolidado.Application.SaldoDiarioDto), "Consolidado.Infrastructure" }
     };
 
     [Theory]
     [MemberData(nameof(Dominios))]
-    public void Dominio_NaoDependeDeInfraestruturaNemDeAplicacao(string nome, Assembly assembly)
+    public void Dominio_NaoDependeDeInfraestruturaNemDeAplicacao(string nome, Type tipo)
     {
-        var resultado = Types.InAssembly(assembly).ShouldNot()
+        var resultado = Types.InAssembly(tipo.Assembly).ShouldNot()
             .HaveDependencyOnAny([.. Infra, nome.Replace("Domain", "Application", StringComparison.Ordinal),
                 nome.Replace("Domain", "Infrastructure", StringComparison.Ordinal)])
             .GetResult();
@@ -44,9 +44,9 @@ public class ArchitectureTests
 
     [Theory]
     [MemberData(nameof(Aplicacoes))]
-    public void Aplicacao_NaoDependeDeInfraestrutura(string nome, Assembly assembly, string infraProjeto)
+    public void Aplicacao_NaoDependeDeInfraestrutura(string nome, Type tipo, string infraProjeto)
     {
-        var resultado = Types.InAssembly(assembly).ShouldNot()
+        var resultado = Types.InAssembly(tipo.Assembly).ShouldNot()
             .HaveDependencyOnAny([.. Infra, infraProjeto])
             .GetResult();
 

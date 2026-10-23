@@ -15,10 +15,12 @@ public class SaldosControllerTests
     private readonly Mock<IQueryHandler<ObterSaldoDiarioQuery, SaldoDiarioDto>> _diario = new();
     private readonly Mock<IQueryHandler<ObterSaldoEmQuery, SaldoEmDto>> _em = new();
     private readonly SaldosController _controller;
+    private readonly SaldosDiariosController _controllerDiario;
 
     public SaldosControllerTests()
     {
-        _controller = new SaldosController(_diario.Object, _em.Object, new Fixo(Agora));
+        _controller = new SaldosController(_em.Object, new Fixo(Agora));
+        _controllerDiario = new SaldosDiariosController(_diario.Object);
     }
 
     [Fact]
@@ -27,7 +29,7 @@ public class SaldosControllerTests
         var dto = new SaldoDiarioDto(Conta, new DateOnly(2026, 9, 1), 10m, 2m, 8m);
         _diario.Setup(h => h.HandleAsync(It.IsAny<ObterSaldoDiarioQuery>(), It.IsAny<CancellationToken>())).ReturnsAsync(dto);
 
-        var result = Assert.IsType<OkObjectResult>(await _controller.ObterSaldoDiario(Conta, new DateOnly(2026, 9, 1), default));
+        var result = Assert.IsType<OkObjectResult>(await _controllerDiario.ObterSaldoDiario(Conta, new DateOnly(2026, 9, 1), default));
 
         Assert.Equal(dto, result.Value);
     }

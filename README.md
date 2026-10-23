@@ -6,11 +6,25 @@ alta demanda e falhas parciais.
 
 > .NET 10 · C# · PostgreSQL · RabbitMQ (MassTransit) · Redis · Keycloak · OpenTelemetry · Docker Compose
 
+### Documentação rápida
+
+| | |
+|---|---|
+| 🧭 **Índice da documentação** | [`docs/`](docs/README.md) |
+| 🏛️ **Arquitetura** (fluxos, modos de falha, requisitos não funcionais, ameaças) | [`docs/arquitetura.md`](docs/arquitetura.md) |
+| 🗺️ **Diagramas C4** (Mermaid) | [Contexto e containers (níveis 1 e 2)](docs/c4/01-contexto-e-containers.md) · [Componentes (nível 3)](docs/c4/02-componentes.md) · [Structurizr DSL](docs/c4/workspace.dsl) |
+| 📝 **ADRs** (20 decisões arquiteturais) | [Índice dos ADRs](docs/adr/README.md) · [template](docs/adr/template.md) |
+| 🧪 **Teste manual guiado** (copiar e colar no PowerShell) | [`docs/roteiro-de-teste-manual.md`](docs/roteiro-de-teste-manual.md) |
+| 📊 **Benchmarks** (EF × SQL) | [`docs/benchmarks/ef-vs-sql.md`](docs/benchmarks/ef-vs-sql.md) |
+| 🔎 **Qualidade estática** (SonarQube) | [ADR-0020](docs/adr/0020-qualidade-estatica-sonarqube.md) |
+
 ## Sumário
+- [Documentação rápida](#documentação-rápida)
 - [Arquitetura em 1 minuto](#arquitetura-em-1-minuto)
 - [Como rodar](#como-rodar)
 - [Usando a API](#usando-a-api)
 - [Testes](#testes)
+- [Princípios e padrões aplicados](#princípios-e-padrões-aplicados)
 - [Simulando falhas](#simulando-falhas)
 - [Documentação de arquitetura](#documentação-de-arquitetura)
 - [Decisões e trade-offs](#decisões-e-trade-offs)
@@ -127,7 +141,7 @@ Todas as chamadas passam pelo **BFF** (`http://localhost:5000`), que roteia para
 | `GET  /api/contas/{conta}/lancamentos/{id}` | Consulta um lançamento |
 | `GET  /api/contas/{conta}/saldo?em=` | Posição da conta **em um instante** (padrão: agora), com custo limitado por **snapshots** |
 | `GET  /api/contas/{conta}/saldo-diario/{yyyy-MM-dd}` | Consolidado do dia (UTC), com cache |
-| `GET  /health/live · /health/ready · /health` · `/metrics` | Operação |
+| `GET  /health/live · /health` · `/metrics` | Operação do BFF (os serviços internos também expõem `/health/ready`, usado pelo Compose e por orquestradores) |
 
 Erros seguem **ProblemDetails (RFC 9457)**: `401` sem token · `403` conta de outro cliente · `404` · `422` regra de negócio ·
 `409` conflito de concorrência · `429` rate limit (com `Retry-After`) · `502/503` serviço interno ou Keycloak indisponível (visto na borda).
@@ -149,6 +163,11 @@ dotnet test  Verx.Finance.slnx
 | `Verx.IntegrationTests` | **PostgreSQL e Redis reais (Testcontainers):** **débitos concorrentes nunca estouram o saldo** e a posição sempre iguala o ledger; chave reutilizada com outro corpo é recusada; **saldo com snapshots = soma bruta** em qualquer instante, inclusive com eventos atrasados e gerador concorrente; **rate limit compartilhado entre réplicas** e fail-open com o Redis parado; lotes concorrentes sobre as mesmas contas somam exatamente, sem *deadlock*; o mesmo lote entregue 8× em paralelo é somado 1×; evento inválido vai para quarentena; 6 workers do outbox publicam cada evento exatamente 1×; broker fora preserva os eventos; 12 `POST` idênticos em paralelo → 1 lançamento; estornos concorrentes → só 1 |
 
 Os testes de integração exigem **Docker em execução**; sem Docker eles são marcados como *ignorados* (não falham).
+
+**CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) compila (warnings = erro), roda todos os testes (com Docker/Testcontainers) e valida os arquivos do Compose a cada push/PR.
+
+**Análise estática (SonarQube, opcional):** `docker compose --profile quality up -d sonarqube`, gere um token em http://localhost:9000 e rode
+`$env:SONAR_TOKEN="<token>"; .\run-scan.ps1` (build + testes com cobertura + análise). Meta e critérios: [ADR-0020](docs/adr/0020-qualidade-estatica-sonarqube.md) (0 bugs, 0 smells, 0 hotspots pendentes, quality gate verde).
 
 ---
 
@@ -201,7 +220,7 @@ docker compose start rabbitmq && docker compose start consolidado-api
 
 **4) Mensagem com falha permanente (DLQ).** Após 6 tentativas com backoff exponencial a mensagem vai para a fila
 `consolidado.lancamento-criado_error`.
-*Runbook:* (a) o alerta dispara quando `messages > 0` nessa fila; (b) inspecione a mensagem e a exceção original na UI do RabbitMQ
+*Runbook:* (a) a regra `MensagensNaDLQ` ([`prometheus-alerts.yml`](prometheus-alerts.yml), métrica do plugin `rabbitmq_prometheus`) dispara quando `messages > 0` nessa fila (veja em http://localhost:9090/alerts); (b) inspecione a mensagem e a exceção original na UI do RabbitMQ
 (`Queues → …_error → Get messages`); (c) corrija a causa (ex.: bug/migração) e **reenvie** movendo as mensagens de volta à fila
 principal (RabbitMQ *Shovel* ou *move messages*); como o consumidor é idempotente, reprocessar é seguro.
 
@@ -218,13 +237,31 @@ docker compose stop keycloak            # POST /auth/login -> 503 em até ~8 s; 
 
 | Documento | Conteúdo |
 |---|---|
-| [`docs/adr/`](docs/adr/README.md) | 19 ADRs: contextos, Outbox e relay, CQRS, consistência/idempotência, projeção em lote, ledger, saldo no tempo, segurança, resiliência, observabilidade, capacidade, BFF/gateway, saldo suficiente e hash, snapshots, sessão PKCE, rate limit distribuído, doc-as-code |
+| [`docs/adr/`](docs/adr/README.md) | 20 ADRs: contextos, Outbox e relay, CQRS, consistência/idempotência, projeção em lote, ledger, saldo no tempo, segurança, resiliência, observabilidade, capacidade, BFF/gateway, saldo suficiente e hash, snapshots, sessão PKCE, rate limit distribuído, doc-as-code, qualidade estática (Sonar) |
 | [`docs/c4/01-contexto-e-containers.md`](docs/c4/01-contexto-e-containers.md) | C4 níveis 1 e 2 (Mermaid) |
 | [`docs/c4/02-componentes.md`](docs/c4/02-componentes.md) | C4 nível 3 por serviço |
 | [`docs/c4/workspace.dsl`](docs/c4/workspace.dsl) | Mesmo modelo em Structurizr DSL |
 | [`docs/roteiro-de-teste-manual.md`](docs/roteiro-de-teste-manual.md) | Passo a passo (PowerShell) para testar tudo manualmente: login, lançamentos, saldos, estorno, segurança e falhas |
 | [`docs/benchmarks/ef-vs-sql.md`](docs/benchmarks/ef-vs-sql.md) | Medição EF (padrão) × SQL otimizado: velocidade, conflitos e conta quente (e a demonstração em [`docs/demos/`](docs/demos/upsert-demo.sh)) |
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Fluxos, modos de falha, requisitos não funcionais e ameaças |
+
+---
+
+## Princípios e padrões aplicados
+
+| Princípio / padrão | Onde está no código |
+|---|---|
+| **S**RP — uma responsabilidade por tipo | Um handler por caso de uso ([`RegistrarLancamentoHandler`](src/Lancamentos/Lancamentos.Application/Commands/RegistrarLancamentoHandler.cs)); nenhuma classe `*Service`; "um tipo por arquivo" imposto por [`CleanCodeTests`](src/Verx.ArchitectureTests/CleanCodeTests.cs) |
+| **O**CP / **L**SP — extensão sem alterar o existente | Projeção e posição têm duas implementações intercambiáveis por configuração ([`EfProjecaoTransacao`](src/Consolidado/Consolidado.Infrastructure/Projecao/EfProjecaoTransacao.cs) · [`SqlProjecaoTransacao`](src/Consolidado/Consolidado.Infrastructure/Projecao/SqlProjecaoTransacao.cs)) atrás de [`IProjecaoTransacao`](src/Consolidado/Consolidado.Application/Abstractions/IProjecaoTransacao.cs) |
+| **I**SP | Interfaces pequenas e específicas ([`ICommandHandler`](src/BuildingBlocks/Verx.SharedKernel/ICommandHandler.cs), [`IQueryHandler`](src/BuildingBlocks/Verx.SharedKernel/IQueryHandler.cs), [`IUnitOfWork`](src/BuildingBlocks/Verx.SharedKernel/IUnitOfWork.cs)) |
+| **D**IP — dependência aponta para dentro | `Domain ← Application ← Infrastructure/API`; Application define as abstrações, Infrastructure as implementa (verificado em [`ArchitectureTests`](src/Verx.ArchitectureTests/ArchitectureTests.cs)) |
+| **Domínio rico** | Regras no domínio: invariantes de [`Lancamento`](src/Lancamentos/Lancamentos.Domain/Entities/Lancamento.cs), totalização em [`SaldoDiario.AcumularPorDia`](src/Consolidado/Consolidado.Domain/Entities/SaldoDiario.cs), saldo suficiente em [`PosicaoConta.Aplicar`](src/Lancamentos/Lancamentos.Domain/Entities/PosicaoConta.cs), *value object* [`Dinheiro`](src/BuildingBlocks/Verx.SharedKernel/Dinheiro.cs); sem *setters* públicos; handlers só orquestram |
+| **Transactional Outbox** | Lançamento + evento na mesma transação; [`OutboxRelay`](src/Lancamentos/Lancamentos.Infrastructure/Outbox/OutboxRelay.cs) publica com `SKIP LOCKED` |
+| **CQRS** | Comandos em Lançamentos, consultas em Consolidado; handlers próprios ([ADR-0003](docs/adr/0003-cqrs-handlers-proprios.md)) |
+| **Decorator** | [`CachedSaldoDiarioReadRepository`](src/Consolidado/Consolidado.Infrastructure/Caching/CachedSaldoDiarioReadRepository.cs) adiciona cache fail-open ao repositório de leitura sem alterá-lo |
+| **Unit of Work** | [`EfUnitOfWork`](src/BuildingBlocks/Verx.Persistence/EfUnitOfWork.cs) |
+| **Idempotent Consumer · Retry · Circuit Breaker · DLQ** | Projeção idempotente, `UseMessageRetry` exponencial, `UseCircuitBreaker` e fila `_error` ([ADR-0008](docs/adr/0008-resiliencia-dlq-rate-limit-cache.md)) |
+| **Gateway / BFF** | YARP no [Bff.API](src/Bff/Bff.API) ([ADR-0014](docs/adr/0014-bff-ponto-unico-de-entrada.md)) |
 
 ---
 
@@ -258,7 +295,7 @@ Alternativas consideradas e rejeitadas estão em cada ADR.
 - **Segurança:** retirar o *password grant* quando não houver mais clientes sem navegador, `ForwardedHeaders` atrás de balanceador, mTLS entre serviços, segredos em Vault/KMS, criptografia em coluna se houver PII, SAST/DAST e *dependency scanning* no CI.
 - **Particionamento** do ledger/movimentos por data; arquivamento a frio; réplicas de leitura para o Consolidado.
 - **Fuso do negócio** (America/Sao_Paulo) no corte do dia e calendário de fechamento.
-- **CI (GitHub Actions)**: build `-warnaserror`, testes (com Docker), cobertura, Sonar, imagem e scan de vulnerabilidades; **testes de carga (k6)** com os SLOs do [ADR-0009](docs/adr/0009-observabilidade.md).
+- **CI:** publicar cobertura e Sonar no pipeline, build/scan de imagem e vulnerabilidades; **testes de carga (k6)** automatizados com os SLOs do [ADR-0009](docs/adr/0009-observabilidade.md).
 - **Kubernetes** (HPA por CPU/lag de fila, PDB, probes `live`/`ready` já prontas) e *feature flags*.
 
 ---
@@ -274,6 +311,7 @@ src/
   Consolidado/      Domain · Application · Infrastructure · API · UnitTests
   Verx.IntegrationTests/  Verx.ArchitectureTests/  Verx.Benchmarks/ (upsert × EF puro)
 docs/               ADRs e C4 (doc-as-code)
+prometheus*.yml     Scrape e regras de alerta (inclui a DLQ)
 load/               Testes de carga (k6) e como reproduzir
 keycloak/           Realm de desenvolvimento (usuários e claims)
 ```

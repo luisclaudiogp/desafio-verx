@@ -1,9 +1,9 @@
 import http from 'k6/http';
 import { check } from 'k6';
 
-const RATE = parseInt(__ENV.RATE || '500');
+const RATE = Number.parseInt(__ENV.RATE || '500');
 const DURACAO = __ENV.DURACAO || '30s';
-const CONTAS = parseInt(__ENV.CONTAS || '200');
+const CONTAS = Number.parseInt(__ENV.CONTAS || '200');
 const CONS = __ENV.CONS || 'http://consolidado-api:8080';
 const KC = __ENV.KC || 'http://keycloak:8080';
 
@@ -31,7 +31,7 @@ export function setup() {
   return { token: res.json('access_token') };
 }
 
-export default function (dados) {
+export default function executar(dados) {
   const i = 1 + Math.floor(Math.random() * CONTAS);
   const id = '00000000-0000-0000-0000-' + String(i).padStart(12, '0');
   const hoje = new Date().toISOString().substring(0, 10);

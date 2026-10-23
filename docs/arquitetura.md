@@ -137,6 +137,6 @@ mesma fila (*competing consumers*), e a concorrência otimista garante a correç
 
 - **Migrations:** aplicadas no startup com *retry/backoff* e lock do EF (conveniente para o desafio). Em produção, executar como
   etapa de deploy (Job) antes de subir as réplicas.
-- **Alertas sugeridos:** DLQ > 0; atraso de projeção > 5 s; taxa de 5xx; circuit breaker aberto; Outbox pendente crescendo.
+- **Alertas:** `MensagensNaDLQ` (DLQ > 0) já está configurado em [`prometheus-alerts.yml`](../prometheus-alerts.yml) (veja em http://localhost:9090/alerts). Sugeridos para produção: atraso de projeção > 5 s; taxa de 5xx; circuit breaker aberto; Outbox pendente crescendo.
 - **Backup/RPO/RTO:** PostgreSQL com PITR (RPO ≈ minutos). O Consolidado é **reconstruível** a partir do ledger (reprojeção),
   portanto o ledger é o ativo crítico.

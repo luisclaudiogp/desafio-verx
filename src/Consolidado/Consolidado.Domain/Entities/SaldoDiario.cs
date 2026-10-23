@@ -16,6 +16,23 @@ public sealed class SaldoDiario
     public static SaldoDiario Abrir(Guid contaId, DateOnly data) =>
         new() { ContaId = contaId, Data = data };
 
+    /// <summary>Agrega movimentos em um delta por (conta, dia): a regra de totalizacao pertence ao dominio.</summary>
+    public static IReadOnlyList<SaldoDiario> AcumularPorDia(IEnumerable<Movimento> movimentos)
+    {
+        ArgumentNullException.ThrowIfNull(movimentos);
+
+        var deltas = new List<SaldoDiario>();
+        foreach (var grupo in movimentos.GroupBy(m => (m.ContaId, m.Dia)))
+        {
+            var delta = Abrir(grupo.Key.ContaId, grupo.Key.Dia);
+            foreach (var movimento in grupo)
+                delta.Aplicar(movimento);
+            deltas.Add(delta);
+        }
+
+        return deltas;
+    }
+
     public void Aplicar(Movimento movimento)
     {
         ArgumentNullException.ThrowIfNull(movimento);
