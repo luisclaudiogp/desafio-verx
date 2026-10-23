@@ -287,6 +287,11 @@ Alternativas consideradas e rejeitadas estão em cada ADR.
 
 ## O que eu faria com mais tempo
 
+**Dívidas técnicas que eu assumo (e como pagaria):**
+- **SRP:** `RegistrarMovimentosEmLoteHandler` (valida, aplica com retry e invalida cache) e `LancamentoPersistidor` (política de retry + transação + replay) concentram mais de uma responsabilidade; extrairia a política de retry para um colaborador injetável.
+- **OCP/DIP:** a escolha EF × SQL é um `if` (em `ProjecaoRepository` e no registro de DI) e o jitter usa `Random.Shared`; trocaria por fábricas registradas por modo e um `Random` injetado, para um terceiro modo não exigir editar código existente.
+- **Outbox:** um payload corrompido travaria o relay (o lote seria reprocessado indefinidamente). Como o payload é gerado pelo próprio serviço na mesma transação, o risco é baixo; evoluiria com contador de tentativas e quarentena, como já existe na projeção.
+
 - **Limite/cheque especial** por conta (ponto de extensão: `PosicaoConta.Aplicar`) e **reconciliação** periódica entre a posição forte da escrita e o consolidado.
 - **Particionar `saldo_snapshots`** por data e **lock por sessão** na renovação do token (se o Keycloak ativar a rotação do *refresh token*).
 - **CDC (Debezium → Kafka)** no lugar do relay em volumes maiores; *schema registry* e testes de contrato (Pact) para eventos.
